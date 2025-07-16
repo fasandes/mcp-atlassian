@@ -450,8 +450,8 @@ class BYOAccessTokenOAuthConfig:
     This configuration does not support token refreshing.
     """
 
-    cloud_id: str
-    access_token: str
+    cloud_id: None = None
+    access_token: str | None = None
     refresh_token: None = None
     expires_at: None = None
 
@@ -472,6 +472,52 @@ class BYOAccessTokenOAuthConfig:
             return None
 
         return cls(cloud_id=cloud_id, access_token=access_token)
+
+    @classmethod
+    def from_request(cls, access_token: str) -> Optional["BYOAccessTokenOAuthConfig"]:
+        """Create a BYOAccessTokenOAuthConfig from request headers.
+
+        Reads `Authorization` header for Bearer token and `X-Atlassian-Cloud-ID`
+        for cloud ID.
+
+        Returns:
+            BYOAccessTokenOAuthConfig instance or None if required
+            headers are missing.
+        """
+
+        cloud_id = cls._get_cloud_id(access_token)
+
+        if not all([cloud_id, access_token]):
+            return None
+
+        return cls(cloud_id=cloud_id, access_token=access_token)
+
+    @classmethod
+    def _get_cloud_id(cls, access_token: str) -> str | None:
+        """Get the cloud ID for the Atlassian instance.
+
+        This method queries the accessible resources endpoint to get the cloud ID.
+        The cloud ID is needed for API calls with OAuth.
+        """
+
+        try:
+            headers = {"Authorization": f"Bearer {access_token}"}
+            response = requests.get(CLOUD_ID_URL, headers=headers)
+            response.raise_for_status()
+
+            resources = response.json()
+            if resources and len(resources) > 0:
+                # Use the first cloud site (most users have only one)
+                # For users with multiple sites, they might need to specify which one to use
+                cloud_id = resources[0]["id"]
+                logger.debug(f"Found cloud ID: {cloud_id}")
+                return cloud_id
+            else:
+                logger.warning("No Atlassian sites found in the response")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get cloud ID: {e}")
+            return None
 
 
 def get_oauth_config_from_env() -> OAuthConfig | BYOAccessTokenOAuthConfig | None:
@@ -529,6 +575,7 @@ def configure_oauth_session(
             f"Refresh token present for attempt: {bool(oauth_config.refresh_token)}"
         )
         return False
+
     session.headers["Authorization"] = f"Bearer {oauth_config.access_token}"
     logger.info("Successfully configured OAuth session for Atlassian Cloud API")
     return True

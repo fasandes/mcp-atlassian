@@ -16,7 +16,6 @@ from starlette.requests import Request
 from mcp_atlassian.confluence import ConfluenceConfig, ConfluenceFetcher
 from mcp_atlassian.jira import JiraConfig, JiraFetcher
 from mcp_atlassian.servers.context import MainAppContext
-from mcp_atlassian.utils.oauth import OAuthConfig
 
 if TYPE_CHECKING:
     from mcp_atlassian.confluence.config import (
@@ -95,26 +94,26 @@ def _create_user_config_for_fetcher(
             )
 
         # For minimal OAuth config (user-provided tokens), use empty strings for client credentials
-        oauth_config_for_user = OAuthConfig(
-            client_id=global_oauth_cfg.client_id if global_oauth_cfg.client_id else "",
-            client_secret=global_oauth_cfg.client_secret
-            if global_oauth_cfg.client_secret
-            else "",
-            redirect_uri=global_oauth_cfg.redirect_uri
-            if global_oauth_cfg.redirect_uri
-            else "",
-            scope=global_oauth_cfg.scope if global_oauth_cfg.scope else "",
-            access_token=user_access_token,
-            refresh_token=None,
-            expires_at=None,
-            cloud_id=effective_cloud_id,
-        )
+        # oauth_config_for_user = OAuthConfig(
+        #     client_id=global_oauth_cfg.client_id if global_oauth_cfg.client_id else "",
+        #     client_secret=global_oauth_cfg.client_secret
+        #     if global_oauth_cfg.client_secret
+        #     else "",
+        #     redirect_uri=global_oauth_cfg.redirect_uri
+        #     if global_oauth_cfg.redirect_uri
+        #     else "",
+        #     scope=global_oauth_cfg.scope if global_oauth_cfg.scope else "",
+        #     access_token=user_access_token,
+        #     refresh_token=None,
+        #     expires_at=None,
+        #     cloud_id=effective_cloud_id,
+        # )
         common_args.update(
             {
                 "username": username_for_config,
                 "api_token": None,
                 "personal_token": None,
-                "oauth_config": oauth_config_for_user,
+                "oauth_config": global_oauth_cfg,
             }
         )
     elif auth_type == "pat":
