@@ -245,7 +245,9 @@ class UserTokenMiddleware(BaseHTTPMiddleware):
         if request_path == mcp_path and request.method == "POST":
             auth_header = request.headers.get("Authorization")
             cloud_id_header = request.headers.get("X-Atlassian-Cloud-Id")
-            cloud_url_header = request.headers.get("cloud-url")
+            cloud_url_header = request.headers.get(
+                "cloud-url"
+            )  # é o url do jira do cliente (atlassian url)
 
             token_for_log = mask_sensitive(
                 auth_header.split(" ", 1)[1].strip()

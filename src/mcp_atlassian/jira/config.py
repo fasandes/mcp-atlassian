@@ -154,11 +154,11 @@ class JiraConfig:
 
         match auth_type:
             case "oauth":
-                url = request.state.user_atlassian_url
+                url = None
                 username = None
-                api_token = None
+                api_token = request.state.user_atlassian_token
                 personal_token = None
-                oauth_config = request.state.user_atlassian_oauth_config
+                oauth_config = BYOAccessTokenOAuthConfig.from_request(api_token)
             case "pat":
                 url = request.state.user_atlassian_url
                 username = None
@@ -216,7 +216,7 @@ class JiraConfig:
                         return True
                 # Bring Your Own Access Token mode
                 elif isinstance(self.oauth_config, BYOAccessTokenOAuthConfig):
-                    if self.oauth_config.cloud_id and self.oauth_config.access_token:
+                    if self.oauth_config.access_token:
                         return True
 
             # Partial configuration is invalid
